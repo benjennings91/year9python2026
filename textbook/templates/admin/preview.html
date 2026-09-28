@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+{#
+    Live preview of one unsaved section, shown inside the editor's iframe.
+    Deliberately standalone (no base.html): it's a fragment of a chapter page,
+    not a page of its own.
+#}
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Preview</title>
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+          integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
+          crossorigin="anonymous">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>.section { margin: 0; }</style>
+</head>
+<body class="p-3">
+    {% include "_section.html" %}
+</body>
+</html>

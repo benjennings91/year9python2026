@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Edit' if section.id else 'New' }} section · Admin{% endblock %}
+{% block container_size %}-fluid{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/ace-builds@1.44.0/src-min-noconflict/ace.min.js" crossorigin="anonymous"></script>
+<style>
+    .editor-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 1.5rem;
+        align-items: start;
+    }
+    @media (max-width: 992px) {
+        .editor-layout { grid-template-columns: 1fr; }
+    }
+    #body {
+        font-family: var(--bs-font-monospace);
+        font-size: .9rem;
+        min-height: 16rem;
+    }
+    #code-editor {
+        height: 16rem;
+        border: 1px solid #dee2e6;
+        border-radius: .375rem;
+    }
+    #preview {
+        width: 100%;
+        height: calc(100vh - 8rem);
+        min-height: 30rem;
+        border: 1px solid #dee2e6;
+        border-radius: .375rem;
+        background: white;
+    }
+    .preview-header {
+        position: sticky;
+        top: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('admin.chapters') }}">Chapters</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('admin.chapter', chapter_id=chapter.id) }}">{{ chapter.title }}</a></li>
+        <li class="breadcrumb-item active">{{ 'Edit' if section.id else 'New' }} section</li>
+    </ol>
+</nav>
+
+<div class="editor-layout">
+    <form method="post" id="section-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="row g-3 mb-3">
+            <div class="col-sm-6">
+                <label class="form-label" for="kind">Kind</label>
+                <select class="form-select" id="kind" name="kind">
+                    {% for k in section.KINDS %}
+                    <option value="{{ k }}" {% if section.kind == k %}selected{% endif %}>{{ k }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-sm-6 exercise-only">
+                <label class="form-label" for="size">Editor size</label>
+                <select class="form-select" id="size" name="size">
+                    {% for s in section.SIZES %}
+                    <option value="{{ s }}" {% if section.size == s %}selected{% endif %}>{{ s }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label" for="body">
+                Text <span class="text-muted">(Markdown)</span>
+            </label>
+            <textarea class="form-control" id="body" name="body" rows="10">{{ section.body }}</textarea>
+        </div>
+
+        <div class="mb-3 exercise-only">
+            <label class="form-label">Starting code</label>
+            <div id="code-editor"></div>
+            <input type="hidden" name="starting_code" id="starting_code" value="{{ section.starting_code }}">
+        </div>
+
+        <button class="btn btn-primary">Save</button>
+        <a class="btn btn-link" href="{{ url_for('admin.chapter', chapter_id=chapter.id) }}">Cancel</a>
+    </form>
+
+    <div>
+        <div class="preview-header">
+            <div class="d-flex justify-content-between align-items-baseline mb-2">
+                <span class="text-muted">Preview</span>
+                <span class="text-muted small" id="preview-status"></span>
+            </div>
+            <iframe id="preview" title="Preview"></iframe>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    (() => {
+        "use strict";
+
+        const PREVIEW_URL = {{ url_for('admin.preview') | tojson }};
+        const DEBOUNCE_MS = 400;
+
+        const form = document.getElementById("section-form");
+        const kindSelect = document.getElementById("kind");
+        const codeInput = document.getElementById("starting_code");
+        const exerciseOnly = document.querySelectorAll(".exercise-only");
+        const preview = document.getElementById("preview");
+        const status = document.getElementById("preview-status");
+
+        // --- Starting-code editor ---------------------------------------------
+        // Same Ace setup the students see, so what you type is what they get.
+
+        const codeEditor = ace.edit("code-editor");
+        codeEditor.session.setMode("ace/mode/python");
+        codeEditor.setTheme("ace/theme/twilight");
+        codeEditor.setShowPrintMargin(false);
+        codeEditor.setOptions({ fontSize: 16 });
+        codeEditor.setValue(codeInput.value, -1);
+        codeEditor.session.on("change", () => {
+            codeInput.value = codeEditor.getValue();
+            schedulePreview();
+        });
+
+        // --- Show/hide exercise-only fields -------------------------------------
+
+        function updateKind() {
+            const isExercise = kindSelect.value === "exercise";
+            exerciseOnly.forEach((el) => { el.hidden = !isExercise; });
+            if (isExercise) codeEditor.resize();
+        }
+
+        // --- Live preview -------------------------------------------------------
+        // Post the form as it stands to the preview route and show the result.
+        // Nothing is saved until the Save button is pressed.
+
+        let timer = null;
+
+        function schedulePreview() {
+            clearTimeout(timer);
+            status.textContent = "…";
+            timer = setTimeout(refreshPreview, DEBOUNCE_MS);
+        }
+
+        async function refreshPreview() {
+            try {
+                const response = await fetch(PREVIEW_URL, {
+                    method: "POST",
+                    body: new FormData(form),
+                });
+                if (!response.ok) throw new Error(response.statusText);
+                preview.srcdoc = await response.text();
+                status.textContent = "";
+            } catch (err) {
+                status.textContent = "Preview failed: " + err.message;
+            }
+        }
+
+        form.addEventListener("input", schedulePreview);
+        kindSelect.addEventListener("change", () => { updateKind(); schedulePreview(); });
+
+        updateKind();
+        refreshPreview();
+    })();
+</script>
+{% endblock %}

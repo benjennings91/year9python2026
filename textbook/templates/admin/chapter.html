@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}{{ chapter.title }} · Admin{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('admin.chapters') }}">Chapters</a></li>
+        <li class="breadcrumb-item active">{{ chapter.title }}</li>
+    </ol>
+</nav>
+
+<form method="post" class="row g-2 align-items-end mb-5">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="col-md-6">
+        <label class="form-label" for="title">Title</label>
+        <input class="form-control" id="title" name="title" value="{{ chapter.title }}" required>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label" for="slug">Slug</label>
+        <input class="form-control" id="slug" name="slug" value="{{ chapter.slug }}" pattern="[a-z0-9-]+" required>
+    </div>
+    <div class="col-md-2">
+        <button class="btn btn-primary w-100">Save</button>
+    </div>
+</form>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="h5 mb-0">Sections</h2>
+    <div>
+        <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('reader.chapter', slug=chapter.slug) }}" target="_blank">View chapter</a>
+        <a class="btn btn-sm btn-primary" href="{{ url_for('admin.new_section', chapter_id=chapter.id) }}">Add section</a>
+    </div>
+</div>
+
+{% if chapter.sections %}
+<table class="table align-middle">
+    <thead>
+        <tr><th>#</th><th>Kind</th><th>Preview</th><th></th></tr>
+    </thead>
+    <tbody>
+    {% for s in chapter.sections %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>
+                {% if s.is_exercise %}
+                <span class="badge text-bg-primary">exercise</span>
+                <span class="badge text-bg-light">{{ s.size }}</span>
+                {% else %}
+                <span class="badge text-bg-secondary">text</span>
+                {% endif %}
+            </td>
+            <td class="text-truncate" style="max-width: 28rem">
+                <a href="{{ url_for('admin.section', section_id=s.id) }}">{{ s.body | truncate(90) or '(empty)' }}</a>
+            </td>
+            <td class="text-end text-nowrap">
+                <form method="post" action="{{ url_for('admin.move_section', section_id=s.id, direction='up') }}" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-sm btn-outline-secondary" {% if loop.first %}disabled{% endif %} title="Move up">&uarr;</button>
+                </form>
+                <form method="post" action="{{ url_for('admin.move_section', section_id=s.id, direction='down') }}" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-sm btn-outline-secondary" {% if loop.last %}disabled{% endif %} title="Move down">&darr;</button>
+                </form>
+                <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('admin.section', section_id=s.id) }}">Edit</a>
+                <form method="post" action="{{ url_for('admin.delete_section', section_id=s.id) }}" class="d-inline"
+                      onsubmit="return confirm('Delete this section?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-sm btn-outline-danger">Delete</button>
+                </form>
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p class="text-muted">This chapter has no sections yet.</p>
+{% endif %}
+{% endblock %}

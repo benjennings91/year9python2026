@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}{{ chapter.title }}{% endblock %}
+
+{% block content %}
+<h1>{{ chapter.title }}</h1>
+
+{% for section in chapter.sections %}
+    {% include "_section.html" %}
+{% endfor %}
+{% endblock %}

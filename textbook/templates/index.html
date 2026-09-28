@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Contents</h1>
+{% if chapters %}
+<ol>
+    {% for ch in chapters %}
+    <li><a href="{{ url_for('reader.chapter', slug=ch.slug) }}">{{ ch.title }}</a></li>
+    {% endfor %}
+</ol>
+{% else %}
+<p class="text-muted">No chapters yet.</p>
+{% endif %}
+{% endblock %}

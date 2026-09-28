@@ -1,0 +1,16 @@
+{#
+    One section of a chapter. Used by chapter.html (real, saved sections,
+    whose playground is loaded by URL) and by the admin preview (an unsaved
+    draft, whose playground HTML is passed in and embedded with srcdoc).
+#}
+{% set frame_height = {'mini': 230, 'large': 710} %}
+
+<section class="section section--{{ section.kind }}">
+    {{ section.body | markdown }}
+    {% if section.is_exercise %}
+    <iframe {% if playground_html %}srcdoc="{{ playground_html }}"{% else %}src="{{ url_for('reader.playground', section_id=section.id) }}"{% endif %}
+            height="{{ frame_height[section.size] }}"
+            title="Exercise"
+            loading="lazy"></iframe>
+    {% endif %}
+</section>

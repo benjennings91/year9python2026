@@ -1,0 +1,19 @@
+/* Shared styles for the reader pages and the admin preview. */
+
+.section {
+    margin: 2rem 0;
+}
+
+.section iframe {
+    display: block;
+    width: 100%;
+    border: 1px solid #dee2e6;
+    border-radius: .375rem;
+}
+
+/* Fenced code blocks in Markdown prose */
+.section pre {
+    background: #f6f8fa;
+    border-radius: .375rem;
+    padding: .75rem 1rem;
+}
