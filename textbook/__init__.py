@@ -9,6 +9,7 @@ Configuration is layered, later sources overriding earlier ones:
    where a file is awkward.
 """
 
+import mimetypes
 from pathlib import Path
 
 import markdown
@@ -17,6 +18,13 @@ from markupsafe import Markup
 
 from . import admin, cli, reader
 from .models import db
+
+
+# The school web filter blocks requests by file extension (.mjs and .wasm get
+# a 403, whatever host serves them), so the MicroPython interpreter is shipped
+# as micropython.js + micropython-wasm.dat. Serve the .dat with the proper WASM
+# MIME type so the browser can still use streaming compilation.
+mimetypes.add_type("application/wasm", ".dat")
 
 
 def create_app():

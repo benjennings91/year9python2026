@@ -80,7 +80,7 @@
 <body>
     <!-- Point PyScript at the self-hosted interpreter instead of jsDelivr. -->
     <mpy-config>
-        interpreter = "{{ url_for('static', filename='vendor/pyscript/micropython/micropython.mjs') }}"
+        interpreter = "{{ url_for('static', filename='vendor/pyscript/micropython/micropython.js') }}"
     </mpy-config>
     <main class="playground{% if section.size == 'mini' %} playground--mini{% endif %}">
         <div id="editor" class="playground__editor"></div>
