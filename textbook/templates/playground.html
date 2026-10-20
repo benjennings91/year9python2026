@@ -13,9 +13,16 @@
         to satisfy that.
     #}
 
-    <!-- PyScript (MicroPython runtime + terminal) -->
-    <link rel="stylesheet" href="https://pyscript.net/releases/2026.6.2/core.css" crossorigin="anonymous">
-    <script type="module" src="https://pyscript.net/releases/2026.6.2/core.js" crossorigin="anonymous"></script>
+    <!--
+        PyScript 2026.6.2 (MicroPython runtime + terminal), self-hosted from
+        static/vendor/pyscript so it works on networks that block CDNs.
+        Taken from the official offline bundle:
+        https://github.com/pyscript/pyscript/releases/tag/2026.6.2
+        (Pyodide and .map files left out; only MicroPython is used here.)
+        Same-origin files need no CORS headers to satisfy require-corp.
+    -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/pyscript/core.css') }}">
+    <script type="module" src="{{ url_for('static', filename='vendor/pyscript/core.js') }}"></script>
 
     <!-- Ace code editor -->
     <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.44.0/src-min-noconflict/ace.min.js" crossorigin="anonymous"></script>
@@ -71,6 +78,10 @@
     </style>
 </head>
 <body>
+    <!-- Point PyScript at the self-hosted interpreter instead of jsDelivr. -->
+    <mpy-config>
+        interpreter = "{{ url_for('static', filename='vendor/pyscript/micropython/micropython.mjs') }}"
+    </mpy-config>
     <main class="playground{% if section.size == 'mini' %} playground--mini{% endif %}">
         <div id="editor" class="playground__editor"></div>
 
