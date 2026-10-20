@@ -73,7 +73,12 @@
         .playground__controls {
             display: flex;
             justify-content: center;
+            align-items: center;
             gap: var(--playground-gap);
+        }
+
+        .playground__status {
+            font-size: 0.8rem;
         }
     </style>
 </head>
@@ -107,10 +112,67 @@ def run_user_code():
             <button type="button" class="btn btn-secondary" id="run">Run</button>
             <button type="button" class="btn btn-danger" id="stop">Stop/Clear</button>
             <button type="button" class="btn btn-warning" id="reset">Reset</button>
+            <small id="status" class="playground__status text-muted">Loading Python…</small>
         </div>
     </main>
 
     <script>
+        // --- Startup diagnostics ------------------------------------------
+        // Students can't open DevTools, so report in the page why Python did
+        // not start. Checks, in order: the browser can isolate the page
+        // (needed for the worker terminal), the interpreter files can be
+        // fetched (a web filter may block them), and PyScript reported ready.
+        (() => {
+            "use strict";
+
+            const status = document.getElementById("status");
+            const show = (text, bad) => {
+                status.textContent = text;
+                status.className = "playground__status " + (bad ? "text-danger" : "text-muted");
+            };
+            let ready = false;
+            let blocked = false;   // a "blocked" message is more useful than the raw error
+
+            document.addEventListener("mpy:done", () => {
+                ready = true;
+                show("Ready");
+            });
+            window.addEventListener("error", (e) => {
+                if (!ready && !blocked) show("Python failed to start: " + (e.message || "unknown error"), true);
+            });
+            window.addEventListener("unhandledrejection", (e) => {
+                if (!ready && !blocked) show("Python failed to start: " + (e.reason?.message || e.reason), true);
+            });
+
+            if (!window.crossOriginIsolated) {
+                show("Python can't start: this browser is not allowing the page to be isolated "
+                     + "(SharedArrayBuffer unavailable).", true);
+                return;
+            }
+
+            const INTERPRETER = {{ url_for('static', filename='vendor/pyscript/micropython/micropython.mjs') | tojson }};
+            const WASM = {{ url_for('static', filename='vendor/pyscript/micropython/micropython.wasm') | tojson }};
+            for (const url of [INTERPRETER, WASM]) {
+                fetch(url, { method: "HEAD", cache: "no-store" })
+                    .then((r) => {
+                        if (r.ok) return;
+                        blocked = true;
+                        show(`Blocked: ${url.split("/").pop()} returned HTTP ${r.status} `
+                             + "(probably the school web filter).", true);
+                    })
+                    .catch((err) => {
+                        blocked = true;
+                        show(`Can't fetch ${url.split("/").pop()}: ${err.message}`, true);
+                    });
+            }
+
+            setTimeout(() => {
+                if (!ready && status.textContent === "Loading Python…") {
+                    show("Python is taking a long time to start (30 s). Still waiting…", true);
+                }
+            }, 30000);
+        })();
+
         (() => {
             "use strict";
 
